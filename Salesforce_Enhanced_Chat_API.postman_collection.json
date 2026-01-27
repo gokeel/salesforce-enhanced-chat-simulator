@@ -1,0 +1,371 @@
+{
+	"info": {
+		"_postman_id": "salesforce-enhanced-chat-simulator",
+		"name": "Salesforce Enhanced Chat API Simulator",
+		"description": "Complete collection for testing Salesforce Enhanced Chat API endpoints via the simulator",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5001",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "conversation_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Generate Access Token (JWT)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.access_token) {",
+									"        pm.collectionVariables.set('access_token', jsonData.access_token);",
+									"        console.log('Access token saved:', jsonData.access_token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/generate-access-token",
+							"host": ["{{base_url}}"],
+							"path": ["api", "generate-access-token"]
+						},
+						"description": "Generate JWT-authenticated access token"
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Access Token (Unauthenticated)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.access_token) {",
+									"        pm.collectionVariables.set('access_token', jsonData.access_token);",
+									"        console.log('Access token saved:', jsonData.access_token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/generate-access-token-unauth",
+							"host": ["{{base_url}}"],
+							"path": ["api", "generate-access-token-unauth"]
+						},
+						"description": "Generate unauthenticated access token"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for generating access tokens"
+		},
+		{
+			"name": "2. Conversation Management",
+			"item": [
+				{
+					"name": "Create Conversation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.conversationId) {",
+									"        pm.collectionVariables.set('conversation_id', jsonData.conversationId);",
+									"        console.log('Conversation ID saved:', jsonData.conversationId);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"language\": \"en_US\",\n  \"msisdn\": \"081519441620\",\n  \"chat_source\": \"WhatsApp IM3\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/create-conversation",
+							"host": ["{{base_url}}"],
+							"path": ["api", "create-conversation"]
+						},
+						"description": "Create a new conversation with routing attributes"
+					},
+					"response": []
+				},
+				{
+					"name": "Close Conversation",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/close-conversation",
+							"host": ["{{base_url}}"],
+							"path": ["api", "close-conversation"]
+						},
+						"description": "Permanently close the current conversation"
+					},
+					"response": []
+				},
+				{
+					"name": "End Messaging Session",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/end-session",
+							"host": ["{{base_url}}"],
+							"path": ["api", "end-session"]
+						},
+						"description": "End the current messaging session while keeping conversation open"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing conversation lifecycle"
+		},
+		{
+			"name": "3. Messaging",
+			"item": [
+				{
+					"name": "Send Typing Indicator (Start)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"indicator_type\": \"TypingStartedIndicator\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/send-typing-indicator",
+							"host": ["{{base_url}}"],
+							"path": ["api", "send-typing-indicator"]
+						},
+						"description": "Send typing started indicator"
+					},
+					"response": []
+				},
+				{
+					"name": "Send Typing Indicator (Stop)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"indicator_type\": \"TypingStoppedIndicator\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/send-typing-indicator",
+							"host": ["{{base_url}}"],
+							"path": ["api", "send-typing-indicator"]
+						},
+						"description": "Send typing stopped indicator"
+					},
+					"response": []
+				},
+				{
+					"name": "Send Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"Hello! This is a test message from Postman.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/send-message",
+							"host": ["{{base_url}}"],
+							"path": ["api", "send-message"]
+						},
+						"description": "Send a text message to the conversation"
+					},
+					"response": []
+				},
+				{
+					"name": "Send File",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "caption",
+									"value": "Sample file uploaded from Postman",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/send-file",
+							"host": ["{{base_url}}"],
+							"path": ["api", "send-file"]
+						},
+						"description": "Upload and send a file to the conversation (max 5MB)"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for sending messages and files"
+		},
+		{
+			"name": "4. Conversation Viewer",
+			"item": [
+				{
+					"name": "List Conversations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/list-conversations?inclClosedConvs=false&limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "list-conversations"],
+							"query": [
+								{
+									"key": "inclClosedConvs",
+									"value": "false",
+									"description": "Include closed conversations"
+								},
+								{
+									"key": "limit",
+									"value": "20",
+									"description": "Maximum number of conversations (1-50)"
+								}
+							]
+						},
+						"description": "List all conversations for the current user"
+					},
+					"response": []
+				},
+				{
+					"name": "List Conversation Entries",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/list-conversation-entries/{{conversation_id}}?limit=20&direction=FromEnd",
+							"host": ["{{base_url}}"],
+							"path": ["api", "list-conversation-entries", "{{conversation_id}}"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20",
+									"description": "Maximum number of entries (1-50)"
+								},
+								{
+									"key": "direction",
+									"value": "FromEnd",
+									"description": "FromEnd or FromStart"
+								}
+							]
+						},
+						"description": "List entries for a specific conversation"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for viewing conversation history"
+		},
+		{
+			"name": "5. Real-Time Events",
+			"item": [
+				{
+					"name": "Get SSE Configuration",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/sse-config",
+							"host": ["{{base_url}}"],
+							"path": ["api", "sse-config"]
+						},
+						"description": "Get Server-Sent Events connection configuration"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for real-time event streaming configuration"
+		},
+		{
+			"name": "6. System",
+			"item": [
+				{
+					"name": "Get Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "status"]
+						},
+						"description": "Get current application state (access token, conversation status)"
+					},
+					"response": []
+				}
+			],
+			"description": "System status endpoints"
+		}
+	]
+}

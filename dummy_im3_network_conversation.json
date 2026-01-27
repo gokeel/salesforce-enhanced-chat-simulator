@@ -1,0 +1,66 @@
+{
+  "conversationInfo": {
+    "title": "IM3 Network Issue - Jakarta Selatan",
+    "customerNumber": "081519441620",
+    "issueCategory": "Network/Signal",
+    "startTime": 1706258100000
+  },
+  "participants": [
+    {
+      "displayName": "Budi",
+      "subject": "user-im3-081519441620",
+      "role": "EndUser",
+      "appType": "custom"
+    },
+    {
+      "displayName": "IM3 Virtual Assistant",
+      "subject": "bot-im3-va",
+      "role": "Chatbot",
+      "appType": "custom"
+    }
+  ],
+  "messages": [
+    {
+      "id": 1,
+      "timestamp": 1706258100000,
+      "sender": "user",
+      "text": "Halo, saya mau komplain"
+    },
+    {
+      "id": 2,
+      "timestamp": 1706258105000,
+      "sender": "bot",
+      "text": "Halo Budi! Saya IM3 Virtual Assistant. Ada yang bisa saya bantu?"
+    },
+    {
+      "id": 3,
+      "timestamp": 1706258115000,
+      "sender": "user",
+      "text": "Jaringan IM3 saya di Jakarta Selatan sering hilang sejak kemarin"
+    },
+    {
+      "id": 4,
+      "timestamp": 1706258120000,
+      "sender": "bot",
+      "text": "Terima kasih informasinya. Biarkan saya cek status jaringan di area Anda..."
+    },
+    {
+      "id": 5,
+      "timestamp": 1706258130000,
+      "sender": "bot",
+      "text": "Saya menemukan ada maintenance di beberapa tower di Jakarta Selatan. Apakah sinyal Anda hilang total atau hanya lemah?"
+    },
+    {
+      "id": 6,
+      "timestamp": 1706258145000,
+      "sender": "user",
+      "text": "Hilang total, tidak bisa telepon atau internet sama sekali. Sudah restart HP juga tetap sama"
+    },
+    {
+      "id": 7,
+      "timestamp": 1706258155000,
+      "sender": "bot",
+      "text": "Saya mengerti situasinya. Untuk penanganan lebih lanjut, saya akan hubungkan Anda dengan agen customer service kami. Mohon tunggu sebentar."
+    }
+  ]
+}

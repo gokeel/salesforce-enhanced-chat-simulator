@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Chatbot History - Salesforce Enhanced Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-left: auto;
+        }
+
+        .status.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .info-box {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            border-radius: 4px;
+        }
+
+        .info-box strong {
+            color: #1976d2;
+        }
+
+        .info-box ul {
+            margin: 8px 0 0 20px;
+            color: #666;
+        }
+
+        .info-box li {
+            margin-bottom: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            font-weight: 500;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .loading {
+            display: none;
+            color: #666;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .loading.active {
+            display: inline-block;
+        }
+
+        .response {
+            margin-top: 15px;
+            padding: 12px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .response pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        textarea {
+            width: 100%;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .token-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Send Chatbot History</h1>
+            <p>Send conversation history to Enhanced Chat with OAuth 2.0 authentication</p>
+            <a href="/" class="nav-link">← Back to Main Simulator</a>
+        </div>
+
+        <!-- Step 1: Generate OAuth Token -->
+        <div class="section">
+            <h2>
+                <span class="step-number">1</span>
+                Generate OAuth Token
+                <span id="oauth-status" class="status pending">Not Generated</span>
+            </h2>
+
+            <div class="info-box">
+                <strong>ℹ️ About OAuth Authentication:</strong>
+                <ul>
+                    <li>Uses OAuth 2.0 Client Credentials flow</li>
+                    <li>Requires client_id and client_secret (already configured)</li>
+                    <li>Token format: {orgId}!{tokenString}</li>
+                </ul>
+            </div>
+
+            <button id="btn-generate-oauth" onclick="generateOAuthToken()" style="background-color: #667eea;">
+                Generate OAuth Token
+            </button>
+            <span id="loading-oauth" class="loading">Generating...</span>
+
+            <div id="token-display" class="token-display" style="display: none;">
+                <strong>Access Token:</strong><br>
+                <span id="token-text"></span>
+            </div>
+
+            <div id="response-oauth" class="response" style="display: none;">
+                <pre id="response-oauth-text"></pre>
+            </div>
+        </div>
+
+        <!-- Step 2: Prepare Conversation Data -->
+        <div class="section">
+            <h2>
+                <span class="step-number">2</span>
+                Prepare Conversation Data
+                <span id="data-status" class="status pending">Not Loaded</span>
+            </h2>
+
+            <div class="info-box">
+                <strong>ℹ️ Sample Conversation:</strong>
+                <ul>
+                    <li>Customer (Budi) complains about IM3 network issue in Jakarta Selatan</li>
+                    <li>Bot troubleshoots then escalates to human agent</li>
+                    <li>7 messages total (3 from user, 4 from bot)</li>
+                </ul>
+            </div>
+
+            <button id="btn-load-sample" onclick="loadSampleConversation()" style="background-color: #2196f3;">
+                Load Sample Conversation
+            </button>
+            <span id="loading-data" class="loading">Loading...</span>
+
+            <div style="margin-top: 15px;">
+                <label for="conversation-json">Conversation Data (JSON):</label>
+                <textarea id="conversation-json" rows="15"
+                    placeholder="Click 'Load Sample Conversation' to populate"></textarea>
+            </div>
+        </div>
+
+        <!-- Step 3: Send to Enhanced Chat -->
+        <div class="section">
+            <h2>
+                <span class="step-number">3</span>
+                Send to Enhanced Chat
+                <span id="history-status" class="status pending">Not Sent</span>
+            </h2>
+
+            <div class="info-box">
+                <strong>⚡ Important:</strong>
+                <ul>
+                    <li>Complete Step 1 (OAuth token) before sending</li>
+                    <li>System will first establish conversation with Salesforce</li>
+                    <li>Then send historical entries (max 5 messages)</li>
+                    <li>Messages sent in reverse order for better agent context</li>
+                </ul>
+            </div>
+
+            <button id="btn-send-history" onclick="sendHistoryWithOAuth()" disabled style="background-color: #4caf50;">
+                Send History
+            </button>
+            <span id="loading-history" class="loading">Sending...</span>
+
+            <div id="response-history" class="response" style="display: none;">
+                <pre id="response-history-text"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let oauthToken = null;
+
+        async function generateOAuthToken() {
+            const btn = document.getElementById('btn-generate-oauth');
+            const loading = document.getElementById('loading-oauth');
+            const status = document.getElementById('oauth-status');
+            const tokenDisplay = document.getElementById('token-display');
+            const tokenText = document.getElementById('token-text');
+            const responseDiv = document.getElementById('response-oauth');
+            const responseText = document.getElementById('response-oauth-text');
+
+            btn.disabled = true;
+            loading.classList.add('active');
+            responseDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/generate-oauth-token', {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    oauthToken = data.access_token;
+                    status.className = 'status success';
+                    status.textContent = 'Generated ✓';
+
+                    // Display token (masked)
+                    tokenDisplay.style.display = 'block';
+                    tokenText.textContent = maskToken(oauthToken);
+
+                    // Show full response
+                    responseText.textContent = JSON.stringify(data, null, 2);
+                    responseDiv.style.display = 'block';
+
+                    // Enable send button if conversation loaded
+                    const textarea = document.getElementById('conversation-json');
+                    if (textarea.value.trim()) {
+                        document.getElementById('btn-send-history').disabled = false;
+                    }
+                } else {
+                    status.className = 'status error';
+                    status.textContent = 'Failed ✗';
+                    responseText.textContent = JSON.stringify(data, null, 2);
+                    responseDiv.style.display = 'block';
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.textContent = 'Error ✗';
+                responseText.textContent = `Error: ${error.message}`;
+                responseDiv.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        async function loadSampleConversation() {
+            const btn = document.getElementById('btn-load-sample');
+            const loading = document.getElementById('loading-data');
+            const status = document.getElementById('data-status');
+            const textarea = document.getElementById('conversation-json');
+
+            btn.disabled = true;
+            loading.classList.add('active');
+
+            try {
+                const response = await fetch('/api/load-dummy-conversation');
+                const data = await response.json();
+
+                if (data.success) {
+                    textarea.value = JSON.stringify(data.conversation, null, 2);
+                    status.className = 'status success';
+                    status.textContent = 'Loaded ✓';
+
+                    // Enable send button if OAuth token generated
+                    if (oauthToken) {
+                        document.getElementById('btn-send-history').disabled = false;
+                    }
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                alert(`Error loading sample conversation: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        async function sendHistoryWithOAuth() {
+            const btn = document.getElementById('btn-send-history');
+            const loading = document.getElementById('loading-history');
+            const status = document.getElementById('history-status');
+            const responseDiv = document.getElementById('response-history');
+            const responseText = document.getElementById('response-history-text');
+            const textarea = document.getElementById('conversation-json');
+
+            if (!oauthToken) {
+                alert('Please generate OAuth token first (Step 1)');
+                return;
+            }
+
+            btn.disabled = true;
+            loading.classList.add('active');
+            responseDiv.style.display = 'none';
+
+            try {
+                // Parse JSON from textarea
+                const conversationData = JSON.parse(textarea.value);
+
+                const response = await fetch('/api/send-conversation-history', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-OAuth-Token': oauthToken
+                    },
+                    body: JSON.stringify(conversationData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    status.className = 'status success';
+                    status.textContent = 'Sent ✓';
+                    responseText.textContent = JSON.stringify(data, null, 2);
+                    responseDiv.style.display = 'block';
+                } else {
+                    status.className = 'status error';
+                    status.textContent = 'Failed ✗';
+                    responseText.textContent = JSON.stringify(data, null, 2);
+                    responseDiv.style.display = 'block';
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.textContent = 'Error ✗';
+                responseText.textContent = `Error: ${error.message}`;
+                responseDiv.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        function maskToken(token) {
+            if (!token) return '';
+            if (token.length <= 20) return token;
+            return token.substring(0, 10) + '...' + token.substring(token.length - 10);
+        }
+    </script>
+</body>
+
+</html>

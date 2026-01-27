@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salesforce Enhanced Chat API Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+            font-size: 14px;
+            color: #1976d2;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .section h2 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        button {
+            background-color: #1976d2;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #1565c0;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .status.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .response {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #1976d2;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .response pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .loading {
+            display: none;
+            margin-left: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .loading.active {
+            display: inline;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h1>Salesforce Enhanced Chat API Simulator</h1>
+            <a href="/conversations"
+                style="padding: 10px 20px; background-color: #17a2b8; color: white; text-decoration: none; border-radius: 5px; font-size: 14px;">📝
+                View Conversations</a>
+        </div>
+        <div class="info">
+            <strong>Configuration:</strong><br>
+            Server: http://localhost:5001<br>
+            SCRT URL: https://indosat--miawdev.sandbox.my.salesforce-scrt.com<br>
+            Org ID: 00DMR000001JY5Z<br>
+            ES Developer Name: Chatbot_Channel
+        </div>
+
+        <!-- Step 1: Generate Access Token -->
+        <div class="section">
+            <h2>Step 1: Generate Access Token
+                <span id="token-status" class="status pending">Not Generated</span>
+            </h2>
+            <p style="margin-bottom: 15px; color: #666;">Generate a Salesforce access token.
+            </p>
+            <button id="btn-generate-token" onclick="generateToken()">Generate (JWT - Authenticated)</button>
+            <button id="btn-generate-token-unauth" onclick="generateTokenUnauthenticated()"
+                style="background-color: #43a047;">Generate (Unauthenticated)</button>
+            <span id="loading-token" class="loading">Loading...</span>
+            <div id="response-token" class="response" style="display: none;">
+                <pre id="response-token-text"></pre>
+            </div>
+        </div>
+
+        <!-- Step 2: Create Conversation -->
+        <div class="section">
+            <h2>Step 2: Create Conversation
+                <span id="conversation-status" class="status pending">Not Created</span>
+            </h2>
+            <p style="margin-bottom: 15px; color: #666;">Create a new conversation session (requires access token from
+                Step 1).</p>
+
+            <div class="input-group">
+                <label>Language (optional):</label>
+                <input type="text" id="language" placeholder="en_US" value="en_US">
+            </div>
+
+            <div class="input-group">
+                <label>MSISDN:</label>
+                <input type="text" id="msisdn" placeholder="081519441620" value="081519441620">
+            </div>
+
+            <div class="input-group">
+                <label>Chat Source:</label>
+                <input type="text" id="chat-source" placeholder="WhatsApp IM3" value="WhatsApp IM3">
+            </div>
+
+            <button id="btn-create-conversation" onclick="createConversation()" disabled>Create Conversation</button>
+            <span id="loading-conversation" class="loading">Loading...</span>
+            <div id="response-conversation" class="response" style="display: none;">
+                <pre id="response-conversation-text"></pre>
+            </div>
+        </div>
+
+        <!-- Send Chatbot History - Navigate to dedicated page -->
+        <div class="section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h2 style="color: white;">📋 Send Chatbot History</h2>
+            <p style="margin-bottom: 15px; opacity: 0.9;">Send conversation history with OAuth 2.0 authentication
+                (separate page with dedicated workflow).</p>
+
+            <div
+                style="margin-bottom: 15px; padding: 12px; background: rgba(255, 255, 255, 0.1); border-left: 4px solid rgba(255, 255, 255, 0.5); border-radius: 4px;">
+                <strong style="color: white;">ℹ️ Why a separate page?</strong>
+                <ul style="margin: 8px 0 0 20px; opacity: 0.9;">
+                    <li>Requires different authentication (OAuth 2.0 Client Credentials)</li>
+                    <li>Dedicated 3-step workflow (Generate Token → Load Conversation → Send History)</li>
+                    <li>Independent from main simulator's JWT authentication</li>
+                </ul>
+            </div>
+
+            <a href="/history"
+                style="display: inline-block; padding: 12px 24px; background: white; color: #667eea; text-decoration: none; border-radius: 5px; font-weight: 500; transition: all 0.3s;">
+                Open Chatbot History Page →
+            </a>
+        </div>
+
+        <!-- Real-Time Events (SSE) -->
+        <div class="section">
+            <h2>Real-Time Events (SSE)
+                <span id="sse-status" class="status error">🔴 Disconnected</span>
+            </h2>
+            <p style="margin-bottom: 15px; color: #666;">Connect to receive real-time updates for messages, typing
+                indicators, and more (requires conversation from Step 2).</p>
+
+            <button id="btn-connect-sse" onclick="connectSSE()" disabled
+                style="background-color: #17a2b8; margin-right: 10px;">Connect SSE</button>
+            <button id="btn-disconnect-sse" onclick="disconnectSSE()" disabled
+                style="background-color: #6c757d;">Disconnect SSE</button>
+            <span id="loading-sse" class="loading">Connecting...</span>
+
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 16px; margin-bottom: 10px;">Event Log <button onclick="clearEventLog()"
+                        style="padding: 5px 10px; font-size: 12px; background-color: #dc3545;">Clear Log</button></h3>
+                <div id="event-log"
+                    style="max-height: 300px; overflow-y: auto; background: #f8f9fa; border: 1px solid #ddd; border-radius: 5px; padding: 10px; font-family: 'Courier New', monospace; font-size: 12px;">
+                    <div style="color: #999; text-align: center; padding: 20px;">No events yet. Click "Connect SSE" to
+                        start receiving events.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Send Typing Indicator -->
+        <div class="section">
+            <h2>Step 4: Send Typing Indicator
+                <span id="typing-status" class="status pending">Not Sent</span>
+            </h2>
+            <p style="margin-bottom: 15px; color: #666;">Send typing indicators to notify the agent/bot that the user is
+                typing (requires conversation from Step 2).</p>
+
+            <button id="btn-start-typing" onclick="sendTypingIndicator('TypingStartedIndicator')" disabled
+                style="background-color: #43a047;">Start Typing</button>
+            <button id="btn-stop-typing" onclick="sendTypingIndicator('TypingStoppedIndicator')" disabled
+                style="background-color: #e53935;">Stop Typing</button>
+            <span id="loading-typing" class="loading">Loading...</span>
+            <div id="response-typing" class="response" style="display: none;">
+                <pre id="response-typing-text"></pre>
+            </div>
+        </div>
+
+        <!-- Step 5: Send Message -->
+        <div class="section">
+            <h2>Step 5: Send Message
+                <span id="message-status" class="status pending">Not Sent</span>
+            </h2>
+            <p style="margin-bottom: 15px; color: #666;">Send a text message to the conversation (requires conversation
+                from
+                Step 2).</p>
+
+            <div class="input-group">
+                <label>Message:</label>
+                <textarea id="message-text" placeholder="Type your message here..." rows="3"
+                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-family: Arial, sans-serif; resize: vertical;"></textarea>
+            </div>
+
+            <button id="btn-send-message" onclick="sendMessage()" disabled style="background-color: #1976d2;">Send
+                Message</button>
+            <span id="loading-message" class="loading">Loading...</span>
+            <div id="response-message" class="response" style="display: none;">
+                <pre id="response-message-text"></pre>
+            </div>
+        </div>
+
+        <!-- Step 6: Send File -->
+        <div class="section">
+            <h2>Step 6: Send File
+                <span id="file-status" class="status pending">Not Sent</span>
+            </h2>
+            <p style="margin-bottom: 15px; color: #666;">Upload and send a file to the conversation (requires
+                conversation
+                from Step 2). Max 5MB.</p>
+
+            <div class="input-group">
+                <label>Select File:</label>
+                <input type="file" id="file-input" accept="image/*,.pdf,.doc,.docx,.csv,.txt,.xlsx,.xml"
+                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+            </div>
+
+            <div class="input-group">
+                <label>Caption (optional):</label>
+                <input type="text" id="file-caption" placeholder="Add a caption for your file..."
+                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+            </div>
+
+            <div id="file-info"
+                style="margin-bottom: 15px; padding: 10px; background: #f0f0f0; border-radius: 4px; display: none;">
+                <small id="file-info-text" style="color: #555;"></small>
+            </div>
+
+            <button id="btn-send-file" onclick="sendFile()" disabled style="background-color: #1976d2;">Send
+                File</button>
+            <span id="loading-file" class="loading">Loading...</span>
+            <div id="response-file" class="response" style="display: none;">
+                <pre id="response-file-text"></pre>
+            </div>
+        </div>
+
+        <!-- Step 7: Conversation Management -->
+        <div class="section">
+            <h2>Step 7: Conversation Management
+                <span id="management-status" class="status pending">No Action</span>
+            </h2>
+            <p style="margin-bottom: 15px; color: #666;">Manage your conversation (requires conversation from Step 2).
+            </p>
+
+            <div
+                style="margin-bottom: 15px; padding: 12px; background: #fff9e6; border-left: 4px solid #ffa726; border-radius: 4px;">
+                <strong style="color: #f57c00;">⚠️ Important Difference:</strong>
+                <ul style="margin: 8px 0 0 20px; color: #666;">
+                    <li><strong>Close Conversation:</strong> Permanently closes the conversation. No more messages can
+                        be
+                        sent.</li>
+                    <li><strong>End Messaging Session:</strong> Only ends the current session. Conversation remains open
+                        for
+                        future messages.</li>
+                </ul>
+            </div>
+
+            <button id="btn-close-conversation" onclick="closeConversation()" disabled
+                style="background-color: #e53935; margin-right: 10px;">Close Conversation</button>
+            <button id="btn-end-session" onclick="endMessagingSession()" disabled style="background-color: #fb8c00;">End
+                Messaging Session</button>
+            <span id="loading-management" class="loading">Loading...</span>
+            <div id="response-management" class="response" style="display: none;">
+                <pre id="response-management-text"></pre>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let hasToken = false;
+
+        async function generateToken() {
+            const btn = document.getElementById('btn-generate-token');
+            const loading = document.getElementById('loading-token');
+            const responseDiv = document.getElementById('response-token');
+            const responseText = document.getElementById('response-token-text');
+            const status = document.getElementById('token-status');
+
+            btn.disabled = true;
+            loading.classList.add('active');
+            responseDiv.style.display = 'none';
+            status.className = 'status pending';
+            status.textContent = 'Generating...';
+
+            try {
+                const response = await fetch('/api/generate-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                responseText.textContent = JSON.stringify(data, null, 2);
+                responseDiv.style.display = 'block';
+
+                if (data.success) {
+                    status.className = 'status success';
+                    status.textContent = 'Generated ✓';
+                    hasToken = true;
+                    document.getElementById('btn-create-conversation').disabled = false;
+                } else {
+                    status.className = 'status error';
+                    status.textContent = 'Failed ✗';
+                }
+            } catch (error) {
+                responseText.textContent = `Error: ${error.message}`;
+                responseDiv.style.display = 'block';
+                status.className = 'status error';
+                status.textContent = 'Failed ✗';
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        async function generateTokenUnauthenticated() {
+            const btn = document.getElementById('btn-generate-token-unauth');
+            const loading = document.getElementById('loading-token');
+            const responseDiv = document.getElementById('response-token');
+            const responseText = document.getElementById('response-token-text');
+            const status = document.getElementById('token-status');
+
+            btn.disabled = true;
+            loading.classList.add('active');
+            responseDiv.style.display = 'none';
+            status.className = 'status pending';
+            status.textContent = 'Generating...';
+
+            try {
+                const response = await fetch('/api/generate-token-unauthenticated', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                responseText.textContent = JSON.stringify(data, null, 2);
+                responseDiv.style.display = 'block';
+
+                if (data.success) {
+                    status.className = 'status success';
+                    status.textContent = 'Generated ✓ (Unauthenticated)';
+                    hasToken = true;
+                    document.getElementById('btn-create-conversation').disabled = false;
+                } else {
+                    status.className = 'status error';
+                    status.textContent = 'Failed ✗';
+                }
+            } catch (error) {
+                responseText.textContent = `Error: ${error.message}`;
+                responseDiv.style.display = 'block';
+                status.className = 'status error';
+                status.textContent = 'Failed ✗';
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        async function createConversation() {
+            const btn = document.getElementById('btn-create-conversation');
+            const loading = document.getElementById('loading-conversation');
+            const responseDiv = document.getElementById('response-conversation');
+            const responseText = document.getElementById('response-conversation-text');
+            const status = document.getElementById('conversation-status');
+            const language = document.getElementById('language').value;
+            const msisdn = document.getElementById('msisdn').value;
+            const chatSource = document.getElementById('chat-source').value;
+
+            btn.disabled = true;
+            loading.classList.add('active');
+            responseDiv.style.display = 'none';
+            status.className = 'status pending';
+            status.textContent = 'Creating...';
+
+            try {
+                const response = await fetch('/api/create-conversation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        language: language || 'en_US',
+                        routingAttributes: {
+                            MSISDN: msisdn,
+                            Chat_Source: chatSource
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                responseText.textContent = JSON.stringify(data, null, 2);
+                responseDiv.style.display = 'block';
+
+                if (data.success) {
+                    status.className = 'status success';
+                    status.textContent = 'Created ✓';
+                    // Enable typing indicator buttons
+                    document.getElementById('btn-start-typing').disabled = false;
+                    document.getElementById('btn-stop-typing').disabled = false;
+                    // Enable send message button
+                    document.getElementById('btn-send-message').disabled = false;
+                    // Enable send file button
+                    document.getElementById('btn-send-file').disabled = false;
+                    // Enable conversation management buttons
+                    document.getElementById('btn-close-conversation').disabled = false;
+                    document.getElementById('btn-end-session').disabled = false;
+                    // Enable SSE connect button
+                    document.getElementById('btn-connect-sse').disabled = false;
+                } else {
+                    status.className = 'status error';
+                    status.textContent = 'Failed ✗';
+                }
+            } catch (error) {
+                responseText.textContent = `Error: ${error.message}`;
+                responseDiv.style.display = 'block';
+                status.className = 'status error';
+                status.textContent = 'Failed ✗';
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        async function sendTypingIndicator(entryType) {
+            const btnStart = document.getElementById('btn-start-typing');
+            const btnStop = document.getElementById('btn-stop-typing');
+            const loading = document.getElementById('loading-typing');
+            const responseDiv = document.getElementById('response-typing');
+            const responseText = document.getElementById('response-typing-text');
+            const status = document.getElementById('typing-status');
+
+            // Disable both buttons during request
+            btnStart.disabled = true;
+            btnStop.disabled = true;
+            loading.classList.add('active');
+            responseDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/send-typing-indicator', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        entryType: entryType
+                    })
+                });
+
+                const data = await response.json();
+
+                responseText.textContent = JSON.stringify(data, null, 2);
+                responseDiv.style.display = 'block';
+
+                if (data.success) {
+                    status.className = 'status success';
+                    if (entryType === 'TypingStartedIndicator') {
+                        status.textContent = 'Started ✓';
+                    } else {
+                        status.textContent = 'Stopped ✓';
+                    }
+                } else {
+                    status.className = 'status error';
+                    status.textContent = 'Failed ✗';
+                }
+            } catch (error) {
+                responseText.textContent = `Error: ${error.message}`;
+                responseDiv.style.display = 'block';
+                status.className = 'status error';
+                status.textContent = 'Failed ✗';
+            } finally {
+                // Re-enable buttons after request
+                btnStart.disabled = false;
+                btnStop.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        async function sendMessage() {
+            const btn = document.getElementById('btn-send-message');
+            const loading = document.getElementById('loading-message');
+            const responseDiv = document.getElementById('response-message');
+            const responseText = document.getElementById('response-message-text');
+            const status = document.getElementById('message-status');
+            const messageTextarea = document.getElementById('message-text');
+            const messageText = messageTextarea.value.trim();
+
+            // Validate message is not empty
+            if (!messageText) {
+                alert('Please enter a message');
+                return;
+            }
+
+            btn.disabled = true;
+            loading.classList.add('active');
+            responseDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/send-message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: messageText
+                    })
+                });
+
+                const data = await response.json();
+
+                responseText.textContent = JSON.stringify(data, null, 2);
+                responseDiv.style.display = 'block';
+
+                if (data.success) {
+                    status.className = 'status success';
+                    status.textContent = 'Sent ✓';
+                    // Clear textarea after successful send
+                    messageTextarea.value = '';
+                } else {
+                    status.className = 'status error';
+                    status.textContent = 'Failed ✗';
+                }
+            } catch (error) {
+                responseText.textContent = `Error: ${error.message}`;
+                responseDiv.style.display = 'block';
+                status.className = 'status error';
+                status.textContent = 'Failed ✗';
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        // Show file info when file is selected
+        document.getElementById('file-input').addEventListener('change', function (e) {
+            const fileInfoDiv = document.getElementById('file-info');
+            const fileInfoText = document.getElementById('file-info-text');
+
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
+                fileInfoText.textContent = `Selected: ${file.name} (${fileSizeMB} MB, ${file.type})`;
+                fileInfoDiv.style.display = 'block';
+
+                // Show warning if file is too large
+                if (file.size > 5 * 1024 * 1024) {
+                    fileInfoText.textContent += ' ⚠️ File too large! Max 5MB.';
+                    fileInfoText.style.color = '#d32f2f';
+                } else {
+                    fileInfoText.style.color = '#555';
+                }
+            } else {
+                fileInfoDiv.style.display = 'none';
+            }
+        });
+
+        async function sendFile() {
+            const btn = document.getElementById('btn-send-file');
+            const loading = document.getElementById('loading-file');
+            const responseDiv = document.getElementById('response-file');
+            const responseText = document.getElementById('response-file-text');
+            const status = document.getElementById('file-status');
+            const fileInput = document.getElementById('file-input');
+            const caption = document.getElementById('file-caption').value.trim();
+
+            // Validate file is selected
+            if (!fileInput.files || !fileInput.files[0]) {
+                alert('Please select a file');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const fileSizeMB = file.size / 1024 / 1024;
+
+            // Validate file size
+            if (file.size > 5 * 1024 * 1024) {
+                alert(`File too large. Maximum size is 5MB. Your file is ${fileSizeMB.toFixed(2)}MB.`);
+                return;
+            }
+
+            btn.disabled = true;
+            loading.classList.add('active');
+            responseDiv.style.display = 'none';
+
+            try {
+                // Create FormData
+                const formData = new FormData();
+                formData.append('file', file);
+                if (caption) {
+                    formData.append('caption', caption);
+                }
+
+                const response = await fetch('/api/send-file', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                responseText.textContent = JSON.stringify(data, null, 2);
+                responseDiv.style.display = 'block';
+
+                if (data.success) {
+                    status.className = 'status success';
+                    status.textContent = 'Sent ✓';
+                    // Clear file input and caption
+                    fileInput.value = '';
+                    document.getElementById('file-caption').value = '';
+                    document.getElementById('file-info').style.display = 'none';
+                } else {
+                    status.className = 'status error';
+                    status.textContent = 'Failed ✗';
+                }
+            } catch (error) {
+                responseText.textContent = `Error: ${error.message}`;
+                responseDiv.style.display = 'block';
+                status.className = 'status error';
+                status.textContent = 'Failed ✗';
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        async function closeConversation() {
+            const btnClose = document.getElementById('btn-close-conversation');
+            const btnEnd = document.getElementById('btn-end-session');
+            const loading = document.getElementById('loading-management');
+            const responseDiv = document.getElementById('response-management');
+            const responseText = document.getElementById('response-management-text');
+            const status = document.getElementById('management-status');
+
+            // Disable both buttons during request
+            btnClose.disabled = true;
+            btnEnd.disabled = true;
+            loading.classList.add('active');
+            responseDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/close-conversation', {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                responseText.textContent = JSON.stringify(data, null, 2);
+                responseDiv.style.display = 'block';
+
+                if (data.success) {
+                    status.className = 'status error';
+                    status.textContent = 'Closed';
+                    // Disable all action buttons since conversation is closed
+                    document.getElementById('btn-start-typing').disabled = true;
+                    document.getElementById('btn-stop-typing').disabled = true;
+                    document.getElementById('btn-send-message').disabled = true;
+                    document.getElementById('btn-send-file').disabled = true;
+                    // Keep management buttons disabled
+                } else {
+                    status.className = 'status error';
+                    status.textContent = 'Failed ✗';
+                    // Re-enable buttons on failure
+                    btnClose.disabled = false;
+                    btnEnd.disabled = false;
+                }
+            } catch (error) {
+                responseText.textContent = `Error: ${error.message}`;
+                responseDiv.style.display = 'block';
+                status.className = 'status error';
+                status.textContent = 'Failed ✗';
+                // Re-enable buttons on error
+                btnClose.disabled = false;
+                btnEnd.disabled = false;
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        async function endMessagingSession() {
+            const btnClose = document.getElementById('btn-close-conversation');
+            const btnEnd = document.getElementById('btn-end-session');
+            const loading = document.getElementById('loading-management');
+            const responseDiv = document.getElementById('response-management');
+            const responseText = document.getElementById('response-management-text');
+            const status = document.getElementById('management-status');
+
+            // Disable both buttons during request
+            btnClose.disabled = true;
+            btnEnd.disabled = true;
+            loading.classList.add('active');
+            responseDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/end-session', {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                responseText.textContent = JSON.stringify(data, null, 2);
+                responseDiv.style.display = 'block';
+
+                if (data.success) {
+                    status.className = 'status success';
+                    status.textContent = 'Session Ended ✓';
+                } else {
+                    status.className = 'status error';
+                    status.textContent = 'Failed ✗';
+                }
+            } catch (error) {
+                responseText.textContent = `Error: ${error.message}`;
+                responseDiv.style.display = 'block';
+                status.className = 'status error';
+                status.textContent = 'Failed ✗';
+            } finally {
+                // Re-enable buttons after request
+                btnClose.disabled = false;
+                btnEnd.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        // Check status on load
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                if (data.has_access_token) {
+                    hasToken = true;
+                    document.getElementById('token-status').className = 'status success';
+                    document.getElementById('token-status').textContent = 'Generated ✓';
+                    document.getElementById('btn-create-conversation').disabled = false;
+                }
+
+                if (data.has_conversation) {
+                    document.getElementById('conversation-status').className = 'status success';
+                    document.getElementById('conversation-status').textContent = 'Created ✓';
+                    // Enable typing indicator buttons if conversation exists
+                    document.getElementById('btn-start-typing').disabled = false;
+                    document.getElementById('btn-stop-typing').disabled = false;
+                    // Enable send message button if conversation exists
+                    document.getElementById('btn-send-message').disabled = false;
+                    // Enable send file button if conversation exists
+                    document.getElementById('btn-send-file').disabled = false;
+                    // Enable conversation management buttons if conversation exists
+                    document.getElementById('btn-close-conversation').disabled = false;
+                    document.getElementById('btn-end-session').disabled = false;
+                    // Enable SSE connect button if conversation exists
+                    document.getElementById('btn-connect-sse').disabled = false;
+                }
+            } catch (error) {
+                console.error('Error checking status:', error);
+            }
+        }
+
+        // SSE (Server-Sent Events) Functions
+        let sseAbortController = null;
+        let sseReader = null;
+
+        async function connectSSE() {
+            const btnConnect = document.getElementById('btn-connect-sse');
+            const btnDisconnect = document.getElementById('btn-disconnect-sse');
+            const loading = document.getElementById('loading-sse');
+            const status = document.getElementById('sse-status');
+
+            btnConnect.disabled = true;
+            loading.classList.add('active');
+
+            try {
+                // Get SSE configuration from backend
+                const configResponse = await fetch('/api/sse-config');
+                const config = await configResponse.json();
+
+                if (!config.success) {
+                    throw new Error(config.error);
+                }
+
+                // Build SSE URL with query parameters
+                const url = new URL(config.sse_url);
+                for (const [key, value] of Object.entries(config.query_params)) {
+                    url.searchParams.append(key, value);
+                }
+
+                // Create AbortController for cancellation
+                sseAbortController = new AbortController();
+
+                // Connect to SSE endpoint with custom headers
+                const response = await fetch(url, {
+                    headers: {
+                        'Accept': 'text/event-stream',
+                        'Authorization': `Bearer ${config.access_token}`,
+                        'X-Org-Id': config.org_id
+                    },
+                    signal: sseAbortController.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error(`SSE connection failed: ${response.status} ${response.statusText}`);
+                }
+
+                status.className = 'status success';
+                status.textContent = '🟢 Connected';
+                btnDisconnect.disabled = false;
+                addEventToLog('SYSTEM', 'SSE connection established', 'success');
+
+                // Read SSE stream
+                sseReader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { value, done } = await sseReader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep incomplete line in buffer
+
+                    let eventType = null;
+                    let eventData = null;
+
+                    for (const line of lines) {
+                        if (line.startsWith('event:')) {
+                            eventType = line.substring(6).trim();
+                        } else if (line.startsWith('data:')) {
+                            eventData = line.substring(5).trim();
+                        } else if (line === '' && eventType && eventData) {
+                            // Complete event received
+                            handleSSEEvent(eventType, eventData);
+                            eventType = null;
+                            eventData = null;
+                        }
+                    }
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error('SSE Error:', error);
+                    status.className = 'status error';
+                    status.textContent = '🔴 Error';
+                    addEventToLog('SYSTEM', `Connection error: ${error.message}`, 'error');
+                }
+            } finally {
+                loading.classList.remove('active');
+                if (!btnDisconnect.disabled) {
+                    btnConnect.disabled = false;
+                }
+            }
+        }
+
+        function disconnectSSE() {
+            const btnConnect = document.getElementById('btn-connect-sse');
+            const btnDisconnect = document.getElementById('btn-disconnect-sse');
+            const status = document.getElementById('sse-status');
+
+            if (sseAbortController) {
+                sseAbortController.abort();
+                sseAbortController = null;
+            }
+
+            if (sseReader) {
+                sseReader.cancel();
+                sseReader = null;
+            }
+
+            status.className = 'status error';
+            status.textContent = '🔴 Disconnected';
+            btnConnect.disabled = false;
+            btnDisconnect.disabled = true;
+            addEventToLog('SYSTEM', 'SSE connection closed', 'info');
+        }
+
+        function handleSSEEvent(eventType, eventData) {
+            console.log('SSE Event:', eventType, eventData);
+
+            try {
+                const data = JSON.parse(eventData);
+                addEventToLog(eventType, eventData, getEventColor(eventType));
+            } catch (e) {
+                addEventToLog(eventType, eventData, 'default');
+            }
+        }
+
+        function getEventColor(eventType) {
+            const colors = {
+                'CONVERSATION_MESSAGE': 'message',
+                'CONVERSATION_TYPING_STARTED_INDICATOR': 'typing',
+                'CONVERSATION_TYPING_STOPPED_INDICATOR': 'typing',
+                'CONVERSATION_PARTICIPANT_CHANGED': 'participant',
+                'CONVERSATION_READ_ACKNOWLEDGEMENT': 'ack',
+                'CONVERSATION_DELIVERY_ACKNOWLEDGEMENT': 'ack',
+                'CONVERSATION_ROUTING_RESULT': 'routing',
+                'CONVERSATION_CLOSE_CONVERSATION': 'close'
+            };
+            return colors[eventType] || 'default';
+        }
+
+        function addEventToLog(eventType, eventData, colorClass) {
+            const log = document.getElementById('event-log');
+            const now = new Date().toLocaleTimeString();
+
+            // Clear placeholder if present
+            if (log.children.length === 1 && log.children[0].textContent.includes('No events yet')) {
+                log.innerHTML = '';
+            }
+
+            const eventDiv = document.createElement('div');
+            eventDiv.style.marginBottom = '10px';
+            eventDiv.style.padding = '8px';
+            eventDiv.style.borderLeft = '4px solid ' + getColorForClass(colorClass);
+            eventDiv.style.backgroundColor = 'white';
+            eventDiv.style.borderRadius = '3px';
+
+            const badge = document.createElement('span');
+            badge.style.fontWeight = 'bold';
+            badge.style.color = getColorForClass(colorClass);
+            badge.textContent = eventType;
+
+            const time = document.createElement('span');
+            time.style.color = '#999';
+            time.style.marginLeft = '10px';
+            time.style.fontSize = '11px';
+            time.textContent = now;
+
+            const dataDiv = document.createElement('div');
+            dataDiv.style.marginTop = '5px';
+            dataDiv.style.fontSize = '11px';
+            dataDiv.style.color = '#666';
+            dataDiv.style.wordBreak = 'break-all';
+            dataDiv.textContent = eventData;
+
+            eventDiv.appendChild(badge);
+            eventDiv.appendChild(time);
+            eventDiv.appendChild(dataDiv);
+
+            log.appendChild(eventDiv);
+            log.scrollTop = log.scrollHeight; // Auto-scroll to bottom
+        }
+
+        function getColorForClass(colorClass) {
+            const colors = {
+                'message': '#28a745',
+                'typing': '#17a2b8',
+                'participant': '#ffc107',
+                'ack': '#6c757d',
+                'routing': '#007bff',
+                'close': '#dc3545',
+                'success': '#28a745',
+                'error': '#dc3545',
+                'info': '#17a2b8',
+                'default': '#6c757d'
+            };
+            return colors[colorClass] || '#6c757d';
+        }
+
+        function clearEventLog() {
+            const log = document.getElementById('event-log');
+            log.innerHTML = '<div style="color: #999; text-align: center; padding: 20px;">Event log cleared.</div>';
+        }
+
+        // Check status on page load
+        checkStatus();
+    </script>
+</body>
+
+</html>
