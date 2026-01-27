@@ -65,7 +65,7 @@ def generate_oauth_token(oauth_config):
         }, 500
 
 
-def establish_conversation(access_token, channel_address, participants, org_id, es_developer_name):
+def establish_conversation(access_token, channel_address, participants, org_id, es_developer_name, scrt_url):
     """
     Establish a conversation with Interaction Service API
     
@@ -75,6 +75,7 @@ def establish_conversation(access_token, channel_address, participants, org_id, 
         participants: List of participant objects
         org_id: Organization ID
         es_developer_name: ES Developer Name
+        scrt_url: Salesforce SCRT URL
         
     Returns:
         tuple: (success bool, conversationIdentifier, messagingSessionId, error message)
@@ -84,15 +85,19 @@ def establish_conversation(access_token, channel_address, participants, org_id, 
         request_id = str(uuid.uuid4())
         
         # Call Salesforce establish conversation API
-        url = "https://indosat--miawdev.sandbox.my.salesforce.com/v1/conversation"
+        url = f"{scrt_url}/api/v1/conversation"
         
         # Build participants for establish conversation
         conversation_participants = []
         for p in participants:
+            role = p.get("role", "EndUser")
+            # Set appType to iamessage for EndUser, custom for others
+            app_type = "iamessage" if role == "EndUser" else p.get("appType", "custom")
+            
             conversation_participants.append({
                 "subject": p.get("subject", ""),
-                "role": p.get("role", "EndUser"),
-                "appType": p.get("appType", "custom")
+                "role": role,
+                "appType": app_type
             })
         
         payload = {
@@ -105,7 +110,7 @@ def establish_conversation(access_token, channel_address, participants, org_id, 
             "Authorization": f"Bearer {access_token}",
             "OrgId": org_id,
             "RequestId": request_id,
-            "AuthorizationContext": es_developer_name
+            "AuthorizationContext": "Infobip_Chatbot"
         }
         
         print(f"Establishing conversation at: {url}")
@@ -160,14 +165,18 @@ def transform_conversation_to_salesforce_format(data, scrt_url, org_id, es_devel
         participants_data = data.get("participants", [])
         conversation_participants = []
         for p in participants_data:
+            role = p.get("role", "EndUser")
+            # Set appType to iamessage for EndUser, custom for others
+            app_type = "iamessage" if role == "EndUser" else p.get("appType", "custom")
+            
             conversation_participants.append({
                 "displayName": p.get("displayName", "Unknown"),
                 "participant": {
                     "subject": p.get("subject", ""),
-                    "role": p.get("role", "EndUser"),
-                    "appType": p.get("appType", "custom")
+                    "role": role,
+                    "appType": app_type
                 },
-                "joinedTime": str(data.get("conversationInfo", {}).get("startTime", int(time.time() * 1000)))
+                "joinedTime": str(int(time.time() * 1000))  # Use current timestamp
             })
         
         # Build conversation entries (reverse order - newest first)
@@ -180,10 +189,14 @@ def transform_conversation_to_salesforce_format(data, scrt_url, org_id, es_devel
         # Reverse order for API (newest first)
         messages_to_send.reverse()
         
+        # Use current timestamp for all messages to avoid validation errors
+        current_timestamp = int(time.time() * 1000)
+        
         for msg in messages_to_send:
             # Determine sender
             sender_role = "EndUser"
             sender_subject = ""
+            sender_app_type = "custom"
             
             if msg.get("sender") == "bot":
                 sender_role = "Chatbot"
@@ -191,9 +204,11 @@ def transform_conversation_to_salesforce_format(data, scrt_url, org_id, es_devel
                 for p in participants_data:
                     if p.get("role") == "Chatbot":
                         sender_subject = p.get("subject", "")
+                        sender_app_type = p.get("appType", "custom")
                         break
             else:
-                # Find user participant
+                # Find user participant - set appType to iamessage for EndUser
+                sender_app_type = "iamessage"
                 for p in participants_data:
                     if p.get("role") == "EndUser":
                         sender_subject = p.get("subject", "")
@@ -203,7 +218,7 @@ def transform_conversation_to_salesforce_format(data, scrt_url, org_id, es_devel
             msg_id = str(uuid.uuid4())
             
             entry = {
-                "clientTimestamp": str(msg.get("timestamp", int(time.time() * 1000))),
+                "clientTimestamp": str(current_timestamp),  # Use current timestamp to avoid validation errors
                 "entryPayload": {
                     "entryType": "Message",
                     "id": msg_id,
@@ -219,17 +234,17 @@ def transform_conversation_to_salesforce_format(data, scrt_url, org_id, es_devel
                 "sender": {
                     "subject": sender_subject,
                     "role": sender_role,
-                    "appType": "custom"
+                    "appType": sender_app_type
                 }
             }
             conversation_entries.append(entry)
         
         # Build messaging session
-        start_time = data.get("conversationInfo", {}).get("startTime", int(time.time() * 1000))
+        current_time = int(time.time() * 1000)  # Use current timestamp
         messaging_session = {
             "messagingSessionRequestType": "EstablishMessagingSession",
             "payload": {
-                "startTime": str(start_time)
+                "startTime": str(current_time)
             }
         }
         
@@ -266,13 +281,13 @@ def send_history_to_salesforce(payload, access_token, scrt_url, org_id, es_devel
         request_id = str(uuid.uuid4())
         
         # Call Salesforce API
-        url = "https://indosat--miawdev.sandbox.my.salesforce.com/v1/conversationHistory"
+        url = f"{scrt_url}/api/v1/conversationHistory"
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {access_token}",
             "OrgId": org_id,
-            "AuthorizationContext": es_developer_name,
-            "AuthorizationContextType": "ConversationChannelDefinition",
+            "AuthorizationContext": "Infobip_Chatbot",
+            "AuthorizationContextType": "EmbeddedMessagingChannel",
             "RequestId": request_id
         }
         
@@ -371,28 +386,28 @@ def handle_send_conversation_history(request_obj, app_state, scrt_url, org_id, e
             # Generate a random channel address for OAuth flow
             channel_address = f"oauth-history-{uuid.uuid4()}"
     
-    # STEP 1: Establish conversation first
+    # STEP 1: Establish conversation first (TEMPORARILY DISABLED FOR TESTING)
+    # print("=" * 60)
+    # print("STEP 1: Establishing conversation...")
+    # print("=" * 60)
+    # 
+    # success_establish, conversation_identifier, messaging_session_id, error = establish_conversation(
+    #     access_token, channel_address, participants_data, org_id, es_developer_name, scrt_url
+    # )
+    # 
+    # if not success_establish:
+    #     return {
+    #         "success": False,
+    #         "error": f"Failed to establish conversation: {error}"
+    #     }, 400
+    # 
+    # print(f"✓ Conversation established successfully!")
+    # print(f"  - conversationIdentifier: {conversation_identifier}")
+    # print(f"  - messagingSessionId: {messaging_session_id}")
+    
+    # STEP 1 (was STEP 2): Transform data to Salesforce format
     print("=" * 60)
-    print("STEP 1: Establishing conversation...")
-    print("=" * 60)
-    
-    success_establish, conversation_identifier, messaging_session_id, error = establish_conversation(
-        access_token, channel_address, participants_data, org_id, es_developer_name
-    )
-    
-    if not success_establish:
-        return {
-            "success": False,
-            "error": f"Failed to establish conversation: {error}"
-        }, 400
-    
-    print(f"✓ Conversation established successfully!")
-    print(f"  - conversationIdentifier: {conversation_identifier}")
-    print(f"  - messagingSessionId: {messaging_session_id}")
-    
-    # STEP 2: Transform data to Salesforce format
-    print("=" * 60)
-    print("STEP 2: Transforming conversation data...")
+    print("STEP 1: Transforming conversation data...")
     print("=" * 60)
     
     payload, error = transform_conversation_to_salesforce_format(
@@ -405,18 +420,18 @@ def handle_send_conversation_history(request_obj, app_state, scrt_url, org_id, e
             "error": f"Failed to transform data: {error}"
         }, 400
     
-    # STEP 3: Send conversation history to Salesforce
+    # STEP 2 (was STEP 3): Send conversation history to Salesforce
     print("=" * 60)
-    print("STEP 3: Sending conversation history...")
+    print("STEP 2: Sending conversation history...")
     print("=" * 60)
     
     success, response_data, status_code = send_history_to_salesforce(
         payload, access_token, scrt_url, org_id, es_developer_name
     )
     
-    # Add conversation IDs to response
-    if success and response_data.get("success"):
-        response_data["conversationIdentifier"] = conversation_identifier
-        response_data["establishedMessagingSessionId"] = messaging_session_id
+    # Add conversation IDs to response (DISABLED - no establish conversation)
+    # if success and response_data.get("success"):
+    #     response_data["conversationIdentifier"] = conversation_identifier
+    #     response_data["establishedMessagingSessionId"] = messaging_session_id
     
     return response_data, status_code
