@@ -88,9 +88,15 @@ def establish_conversation(access_token, channel_address, participants, org_id, 
         url = f"{scrt_url}/api/v1/conversation"
         
         # Build participants for establish conversation
+        # Only include EndUser participants (exclude Chatbot to avoid Bad Request)
         conversation_participants = []
         for p in participants:
             role = p.get("role", "EndUser")
+            
+            # Skip Chatbot participants
+            if role == "Chatbot":
+                continue
+                
             # Use custom appType for all participants in establish conversation
             app_type = p.get("appType", "custom")
             
