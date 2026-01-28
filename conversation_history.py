@@ -91,8 +91,8 @@ def establish_conversation(access_token, channel_address, participants, org_id, 
         conversation_participants = []
         for p in participants:
             role = p.get("role", "EndUser")
-            # Set appType to iamessage for EndUser, custom for others
-            app_type = "iamessage" if role == "EndUser" else p.get("appType", "custom")
+            # Use custom appType for all participants in establish conversation
+            app_type = p.get("appType", "custom")
             
             conversation_participants.append({
                 "subject": p.get("subject", ""),
@@ -159,7 +159,7 @@ def transform_conversation_to_salesforce_format(data, scrt_url, org_id, es_devel
                 channel_address = conversation_id.lower()
             else:
                 # Generate a random channel address for OAuth flow
-                channel_address = f"oauth-history-{uuid.uuid4()}"
+                channel_address = f"{uuid.uuid4()}"
         
         # Build participants
         participants_data = data.get("participants", [])
@@ -384,30 +384,35 @@ def handle_send_conversation_history(request_obj, app_state, scrt_url, org_id, e
             channel_address = conversation_id.lower()
         else:
             # Generate a random channel address for OAuth flow
-            channel_address = f"oauth-history-{uuid.uuid4()}"
+            channel_address = f"{uuid.uuid4()}"
     
-    # STEP 1: Establish conversation first (TEMPORARILY DISABLED FOR TESTING)
-    # print("=" * 60)
-    # print("STEP 1: Establishing conversation...")
-    # print("=" * 60)
-    # 
-    # success_establish, conversation_identifier, messaging_session_id, error = establish_conversation(
-    #     access_token, channel_address, participants_data, org_id, es_developer_name, scrt_url
-    # )
-    # 
-    # if not success_establish:
-    #     return {
-    #         "success": False,
-    #         "error": f"Failed to establish conversation: {error}"
-    #     }, 400
-    # 
-    # print(f"✓ Conversation established successfully!")
-    # print(f"  - conversationIdentifier: {conversation_identifier}")
-    # print(f"  - messagingSessionId: {messaging_session_id}")
+    print(f"📍 Using channelAddressIdentifier: {channel_address}")
+    print(f"   - From app_state['channel_address_identifier']: {app_state.get('channel_address_identifier')}")
+    print(f"   - From app_state['conversation_id']: {app_state.get('conversation_id')}")
     
-    # STEP 1 (was STEP 2): Transform data to Salesforce format
+    
+    # STEP 1: Establish conversation first
     print("=" * 60)
-    print("STEP 1: Transforming conversation data...")
+    print("STEP 1: Establishing conversation...")
+    print("=" * 60)
+    
+    success_establish, conversation_identifier, messaging_session_id, error = establish_conversation(
+        access_token, channel_address, participants_data, org_id, es_developer_name, scrt_url
+    )
+    
+    if not success_establish:
+        return {
+            "success": False,
+            "error": f"Failed to establish conversation: {error}"
+        }, 400
+    
+    print(f"✓ Conversation established successfully!")
+    print(f"  - conversationIdentifier: {conversation_identifier}")
+    print(f"  - messagingSessionId: {messaging_session_id}")
+    
+    # STEP 2: Transform data to Salesforce format
+    print("=" * 60)
+    print("STEP 2: Transforming conversation data...")
     print("=" * 60)
     
     payload, error = transform_conversation_to_salesforce_format(
@@ -420,18 +425,18 @@ def handle_send_conversation_history(request_obj, app_state, scrt_url, org_id, e
             "error": f"Failed to transform data: {error}"
         }, 400
     
-    # STEP 2 (was STEP 3): Send conversation history to Salesforce
+    # STEP 3: Send conversation history to Salesforce
     print("=" * 60)
-    print("STEP 2: Sending conversation history...")
+    print("STEP 3: Sending conversation history...")
     print("=" * 60)
     
     success, response_data, status_code = send_history_to_salesforce(
         payload, access_token, scrt_url, org_id, es_developer_name
     )
     
-    # Add conversation IDs to response (DISABLED - no establish conversation)
-    # if success and response_data.get("success"):
-    #     response_data["conversationIdentifier"] = conversation_identifier
-    #     response_data["establishedMessagingSessionId"] = messaging_session_id
+    # Add conversation IDs to response
+    if success and response_data.get("success"):
+        response_data["conversationIdentifier"] = conversation_identifier
+        response_data["establishedMessagingSessionId"] = messaging_session_id
     
     return response_data, status_code
