@@ -26,6 +26,9 @@ wheels/
 # Environment variables and private keys - NEVER commit these!
 .env
 keys/private_key.pem
+keys/private_key.key
+keys/server.key
+keys/server.pass.key
 
 # IDE
 .vscode/
