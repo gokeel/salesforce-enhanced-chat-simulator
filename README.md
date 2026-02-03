@@ -11,10 +11,7 @@ Aplikasi simulasi untuk testing Salesforce Enhanced Chat API dengan Python Flask
 
 ## Configuration
 
-Aplikasi ini sudah dikonfigurasi dengan:
-- **SCRT URL**: `https://indosat--miawdev.sandbox.my.salesforce-scrt.com`
-- **Org ID**: `00DMR000001JY5Z`
-- **ES Developer Name**: `Chatbot_Channel`
+This application uses environment variables for secure configuration. All sensitive credentials are stored in a `.env` file.
 
 ## Setup Instructions
 
@@ -24,12 +21,38 @@ Aplikasi ini sudah dikonfigurasi dengan:
 pip install -r requirements.txt
 ```
 
-### 2. Add Private Key
+### 2. Configure Environment Variables
 
-Taruh private key Anda di folder `keys/` dengan nama file `private_key.pem`:
+Copy the `.env.example` file to `.env` and fill in your credentials:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your Salesforce credentials:
+
+```env
+# Salesforce Configuration
+SCRT_URL=https://your-domain.salesforce-scrt.com
+ORG_ID=your_org_id
+ES_DEVELOPER_NAME=your_es_developer_name
+KID=your_key_id
+PRIVATE_KEY_PATH=keys/private_key.key
+
+# OAuth 2.0 Client Credentials (for Conversation History API)
+OAUTH_TOKEN_URL=https://your-domain.salesforce.com/services/oauth2/token
+OAUTH_CLIENT_ID=your_client_id
+OAUTH_CLIENT_SECRET=your_client_secret
+```
+
+⚠️ **IMPORTANT**: The `.env` file contains sensitive credentials and is already in `.gitignore`. Never commit this file to Git!
+
+### 3. Add Private Key
+
+Taruh private key Anda di folder `keys/` dengan nama file `private_key.key` (atau sesuai dengan `PRIVATE_KEY_PATH` di `.env`):
 
 ```
-keys/private_key.pem
+keys/private_key.key
 ```
 
 Private key harus dalam format PEM. Contoh:
@@ -120,10 +143,14 @@ Get current application state.
 ```
 salesforce-enhanced-chat-simulator/
 ├── app.py                  # Main Flask application
+├── auth.py                 # Authentication module
+├── conversation_history.py # Conversation history module
 ├── requirements.txt        # Python dependencies
+├── .env                    # Environment variables (NOT in git)
+├── .env.example            # Environment variables template
 ├── keys/
 │   ├── README.md          # Instructions for private key
-│   └── private_key.pem    # Your private key (not in git)
+│   └── private_key.key    # Your private key (not in git)
 ├── templates/
 │   └── index.html         # Web interface
 ├── .gitignore
@@ -133,8 +160,10 @@ salesforce-enhanced-chat-simulator/
 ## Security Notes
 
 ⚠️ **IMPORTANT**: 
-- `keys/private_key.pem` sudah ada di `.gitignore`
-- Jangan pernah commit private key ke Git
+- `.env` file contains all sensitive credentials and is in `.gitignore`
+- `keys/private_key.pem` (or `private_key.key`) is also in `.gitignore`
+- Never commit `.env` or private keys to Git
+- The `.env.example` file is provided as a template (safe to commit)
 - Aplikasi ini untuk development/testing only
 - Tidak ada authentication layer karena hanya untuk local testing
 

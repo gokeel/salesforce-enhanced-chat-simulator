@@ -7,6 +7,10 @@ import json
 from datetime import datetime, timedelta
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Import custom modules
 from auth import generate_jwt, generate_access_token as generate_token_with_jwt, validate_access_token
@@ -17,17 +21,18 @@ from conversation_history import (
 
 app = Flask(__name__)
 
-# Salesforce Configuration
-SCRT_URL = "https://indosat--miawdev.sandbox.my.salesforce-scrt.com"
-ORG_ID = "00DMR000001JY5Z"
-ES_DEVELOPER_NAME = "Chatbot_Channel"
-KID = "isimpel-messaging-channel"  # Key ID for JWT header
-PRIVATE_KEY_PATH = "keys/private_key.key"
+# Salesforce Configuration - Load from environment variables
+SCRT_URL = os.getenv("SCRT_URL")
+ORG_ID = os.getenv("ORG_ID")
+ES_DEVELOPER_NAME = os.getenv("ES_DEVELOPER_NAME")
+KID = os.getenv("KID")
+PRIVATE_KEY_PATH = os.getenv("PRIVATE_KEY_PATH", "keys/private_key.key")
 
 # OAuth 2.0 Client Credentials (for Conversation History API)
-OAUTH_TOKEN_URL = "https://indosat--miawdev.sandbox.my.salesforce.com/services/oauth2/token"
-OAUTH_CLIENT_ID = "3MVG9Za5EbktTiWafyyCfxj3T7zlmvaevzm5EVrez4SO8UXIyooWVHxGiyNMfWpPtLH9GVf51r6zdEfJ.EA4B"
-OAUTH_CLIENT_SECRET = "F97AA0459A54EE24C688CED06BC73A7A88549164BB45660584D4FA6F4577D64B"
+OAUTH_TOKEN_URL = os.getenv("OAUTH_TOKEN_URL")
+OAUTH_CLIENT_ID = os.getenv("OAUTH_CLIENT_ID")
+OAUTH_CLIENT_SECRET = os.getenv("OAUTH_CLIENT_SECRET")
+
 
 # In-memory storage for access token (untuk development)
 app_state = {

@@ -23,7 +23,8 @@ wheels/
 .installed.cfg
 *.egg
 
-# Private keys - NEVER commit these!
+# Environment variables and private keys - NEVER commit these!
+.env
 keys/private_key.pem
 
 # IDE
