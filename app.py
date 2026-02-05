@@ -27,6 +27,7 @@ ORG_ID = os.getenv("ORG_ID")
 ES_DEVELOPER_NAME = os.getenv("ES_DEVELOPER_NAME")
 KID = os.getenv("KID")
 PRIVATE_KEY_PATH = os.getenv("PRIVATE_KEY_PATH", "keys/private_key.key")
+JWK_PATH = os.getenv("JWK_PATH", "keys/infobip-private.json")
 
 # OAuth 2.0 Client Credentials (for Conversation History API)
 OAUTH_TOKEN_URL = os.getenv("OAUTH_TOKEN_URL")
@@ -69,9 +70,9 @@ def index():
 def generate_access_token_endpoint():
     """Generate Salesforce access token using JWT"""
     try:
-        # Call auth module function
+        # Call auth module function using JWK file
         success, response_data, status_code = generate_token_with_jwt(
-            SCRT_URL, ORG_ID, ES_DEVELOPER_NAME, KID, PRIVATE_KEY_PATH
+            SCRT_URL, ORG_ID, ES_DEVELOPER_NAME, KID, jwk_path=JWK_PATH
         )
         
         if success:
