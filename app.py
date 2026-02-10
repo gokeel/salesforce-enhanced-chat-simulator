@@ -5,8 +5,6 @@ import os
 import requests
 import json
 from datetime import datetime, timedelta
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.backends import default_backend
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -26,7 +24,6 @@ SCRT_URL = os.getenv("SCRT_URL")
 ORG_ID = os.getenv("ORG_ID")
 ES_DEVELOPER_NAME = os.getenv("ES_DEVELOPER_NAME")
 KID = os.getenv("KID")
-PRIVATE_KEY_PATH = os.getenv("PRIVATE_KEY_PATH", "keys/private_key.key")
 JWK_PATH = os.getenv("JWK_PATH", "keys/infobip-private.json")
 
 # OAuth 2.0 Client Credentials (for Conversation History API)
@@ -42,22 +39,6 @@ app_state = {
     "conversation_id": None,
     "channel_address_identifier": None
 }
-
-
-def load_private_key():
-    """Load private key from file"""
-    try:
-        with open(PRIVATE_KEY_PATH, 'rb') as key_file:
-            private_key = serialization.load_pem_private_key(
-                key_file.read(),
-                password=None,
-                backend=default_backend()
-            )
-        return private_key
-    except FileNotFoundError:
-        raise Exception(f"Private key not found at {PRIVATE_KEY_PATH}. Please add your private key file.")
-    except Exception as e:
-        raise Exception(f"Error loading private key: {str(e)}")
 
 
 @app.route('/')
@@ -834,7 +815,7 @@ if __name__ == '__main__':
     print(f"SCRT URL: {SCRT_URL}")
     print(f"Org ID: {ORG_ID}")
     print(f"ES Developer Name: {ES_DEVELOPER_NAME}")
-    print(f"Private Key: {PRIVATE_KEY_PATH}")
+    print(f"JWK Path: {JWK_PATH}")
     print("=" * 60)
     print("\nStarting server on http://localhost:5001")
     print("\n")

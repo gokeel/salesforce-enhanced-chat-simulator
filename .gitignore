@@ -40,3 +40,5 @@ keys/server.pass.key
 # OS
 .DS_Store
 Thumbs.db
+keys/infobip-private.json
+keys/ioh-subscriber-webkey.json

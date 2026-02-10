@@ -11,9 +11,6 @@ import time
 import json
 import requests
 from datetime import datetime, timedelta
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt.algorithms import RSAAlgorithm
 
 
@@ -33,30 +30,13 @@ def load_private_key_from_jwk(jwk_path):
         raise Exception(f"Error loading JWK: {str(e)}")
 
 
-def load_private_key(private_key_path):
-    """Load private key from file (PEM format)"""
-    try:
-        with open(private_key_path, 'rb') as key_file:
-            private_key = serialization.load_pem_private_key(
-                key_file.read(),
-                password=None,
-                backend=default_backend()
-            )
-        return private_key
-    except FileNotFoundError:
-        raise Exception(f"Private key not found at {private_key_path}. Please add your private key file.")
-    except Exception as e:
-        raise Exception(f"Error loading private key: {str(e)}")
-
-
-def generate_jwt(scrt_url, kid, private_key_path=None, jwk_path=None, subject="user123"):
+def generate_jwt(scrt_url, kid, jwk_path, subject="user123"):
     """
-    Generate JWT token for Salesforce authentication
+    Generate JWT token for Salesforce authentication using JWK
     
     Args:
         scrt_url: Salesforce SCRT URL
         kid: Key ID for JWT header
-        private_key_path: Path to private key file (PEM format)
         jwk_path: Path to JWK file (JSON format)
         subject: Subject identifier (default: "user123")
         
@@ -64,21 +44,8 @@ def generate_jwt(scrt_url, kid, private_key_path=None, jwk_path=None, subject="u
         str: Generated JWT token
     """
     try:
-        # Load private key from JWK or PEM
-        if jwk_path:
-            private_key = load_private_key_from_jwk(jwk_path)
-            # For JWK, we can use the key directly
-            key_for_signing = private_key
-        elif private_key_path:
-            private_key = load_private_key(private_key_path)
-            # Get private key in PEM format for PyJWT
-            key_for_signing = private_key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption()
-            )
-        else:
-            raise Exception("Either private_key_path or jwk_path must be provided")
+        # Load private key from JWK
+        private_key = load_private_key_from_jwk(jwk_path)
         
         # JWT payload
         # Use current time for timestamps
@@ -107,7 +74,7 @@ def generate_jwt(scrt_url, kid, private_key_path=None, jwk_path=None, subject="u
         # Generate JWT with kid in header
         token = jwt.encode(
             payload, 
-            key_for_signing, 
+            private_key, 
             algorithm="RS256",
             headers={"kid": kid}  # Include Key ID in JWT header
         )
@@ -116,16 +83,15 @@ def generate_jwt(scrt_url, kid, private_key_path=None, jwk_path=None, subject="u
         raise Exception(f"Error generating JWT: {str(e)}")
 
 
-def generate_access_token(scrt_url, org_id, es_developer_name, kid, private_key_path=None, jwk_path=None, subject="user123"):
+def generate_access_token(scrt_url, org_id, es_developer_name, kid, jwk_path, subject="user123"):
     """
-    Generate Salesforce access token using JWT
+    Generate Salesforce access token using JWT with JWK
     
     Args:
         scrt_url: Salesforce SCRT URL
         org_id: Salesforce Organization ID
         es_developer_name: Enhanced Service Developer Name
         kid: Key ID for JWT header
-        private_key_path: Path to private key file (PEM format)
         jwk_path: Path to JWK file (JSON format)
         subject: Subject identifier (default: "user123")
         
@@ -134,7 +100,7 @@ def generate_access_token(scrt_url, org_id, es_developer_name, kid, private_key_
     """
     try:
         # Generate JWT
-        customer_identity_token = generate_jwt(scrt_url, kid, private_key_path=private_key_path, jwk_path=jwk_path, subject=subject)
+        customer_identity_token = generate_jwt(scrt_url, kid, jwk_path, subject=subject)
         
         # Prepare request payload for Salesforce
         payload = {
