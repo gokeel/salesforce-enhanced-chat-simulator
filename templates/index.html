@@ -199,7 +199,20 @@
 
             <div class="input-group">
                 <label>Chat Source:</label>
-                <input type="text" id="chat-source" placeholder="WhatsApp IM3" value="WhatsApp IM3">
+                <select id="chat-source"
+                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    <option value="WhatsApp IM3">WhatsApp IM3</option>
+                    <option value="WhatsApp 3ID">WhatsApp 3ID</option>
+                    <option value="WhatsApp HiFi">WhatsApp HiFi</option>
+                    <option value="WhatsApp HiFi Air">WhatsApp HiFi Air</option>
+                    <option value="WhatsApp HiFi Upselling">WhatsApp HiFi Upselling</option>
+                    <option value="FB Messenger IM3">FB Messenger IM3</option>
+                    <option value="FB Messenger 3ID">FB Messenger 3ID</option>
+                    <option value="MyIM3">MyIM3</option>
+                    <option value="Bima">Bima</option>
+                    <option value="Website IM3">Website IM3</option>
+                    <option value="Website 3ID">Website 3ID</option>
+                </select>
             </div>
 
             <button id="btn-create-conversation" onclick="createConversation()" disabled>Create Conversation</button>
