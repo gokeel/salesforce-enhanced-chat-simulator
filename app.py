@@ -14,7 +14,9 @@ load_dotenv()
 from auth import generate_jwt, generate_access_token as generate_token_with_jwt, validate_access_token
 from conversation_history import (
     generate_oauth_token as get_oauth_token,
-    handle_send_conversation_history
+    handle_send_conversation_history,
+    format_conversation_as_transcript,
+    send_history_via_standard_api
 )
 
 app = Flask(__name__)
@@ -759,6 +761,71 @@ def send_conversation_history_endpoint():
     response_data, status_code = handle_send_conversation_history(
         request, app_state, SCRT_URL, ORG_ID, ES_DEVELOPER_NAME
     )
+    return jsonify(response_data), status_code
+
+
+@app.route('/api/send-history-standard', methods=['POST'])
+def send_conversation_history_standard_endpoint():
+    """Send chatbot conversation history via Standard API (PATCH MessagingSession.Bot_Transcript__c)"""
+    # Get OAuth token from custom header
+    oauth_token = request.headers.get('X-OAuth-Token')
+    if not oauth_token:
+        return jsonify({
+            "success": False,
+            "error": "No OAuth token provided. Include X-OAuth-Token header."
+        }), 400
+
+    # Get instance URL from request body
+    data = request.get_json()
+    if not data:
+        return jsonify({
+            "success": False,
+            "error": "No request body provided"
+        }), 400
+
+    instance_url = data.get("instanceUrl", "").rstrip("/")
+    if not instance_url:
+        return jsonify({
+            "success": False,
+            "error": "instanceUrl is required"
+        }), 400
+
+    messaging_session_id = data.get("messagingSessionId", "").strip()
+    if not messaging_session_id:
+        return jsonify({
+            "success": False,
+            "error": "messagingSessionId is required"
+        }), 400
+
+    conversation_data = data.get("conversation", {})
+    if not conversation_data:
+        return jsonify({
+            "success": False,
+            "error": "conversation data is required"
+        }), 400
+
+    # Include the conversationId from app_state in the transcript header
+    conversation_id = app_state.get("conversation_id", "")
+    if conversation_id:
+        conversation_data["_conversationId"] = conversation_id
+
+    # Format transcript
+    transcript_text = format_conversation_as_transcript(conversation_data)
+
+    print(f"Sending history via Standard API")
+    print(f"MessagingSession ID: {messaging_session_id}")
+    print(f"Instance URL: {instance_url}")
+    print(f"Conversation ID (from state): {conversation_id}")
+    print(f"Transcript:\n{transcript_text}")
+
+    success, response_data, status_code = send_history_via_standard_api(
+        oauth_token, instance_url, messaging_session_id, transcript_text
+    )
+
+    # Add conversationId to response for reference
+    if conversation_id:
+        response_data["conversationId"] = conversation_id
+
     return jsonify(response_data), status_code
 
 

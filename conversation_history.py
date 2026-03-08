@@ -446,3 +446,117 @@ def handle_send_conversation_history(request_obj, app_state, scrt_url, org_id, e
         response_data["establishedMessagingSessionId"] = messaging_session_id
     
     return response_data, status_code
+
+
+def format_conversation_as_transcript(data):
+    """
+    Format a conversation data dict into a human-readable transcript string
+    for storage in Bot_Transcript__c.
+
+    Args:
+        data: Conversation data with participants and messages
+
+    Returns:
+        str: Formatted transcript text
+    """
+    participants_data = data.get("participants", [])
+    messages = data.get("messages", [])
+
+    # Build a subject -> display name map
+    name_map = {}
+    for p in participants_data:
+        role = p.get("role", "Unknown")
+        display_name = p.get("displayName", role)
+        subject = p.get("subject", "")
+        # Key by role for easy lookup
+        name_map[role] = display_name
+        if subject:
+            name_map[subject] = display_name
+
+    lines = []
+    lines.append("=== Chatbot Conversation Transcript ===")
+    lines.append("")
+
+    for msg in messages:
+        sender = msg.get("sender", "user")
+        text = msg.get("text", "")
+        timestamp = msg.get("timestamp", "")
+
+        if sender == "bot":
+            label = name_map.get("Chatbot", "Bot")
+        else:
+            label = name_map.get("EndUser", "User")
+
+        if timestamp:
+            lines.append(f"[{label}] ({timestamp}): {text}")
+        else:
+            lines.append(f"[{label}]: {text}")
+
+    lines.append("")
+    lines.append("=== End of Transcript ===")
+
+    return "\n".join(lines)
+
+
+def send_history_via_standard_api(access_token, instance_url, messaging_session_id, transcript_text):
+    """
+    Update Bot_Transcript__c on a MessagingSession record via the Salesforce Standard REST API.
+
+    Args:
+        access_token: OAuth access token
+        instance_url: Salesforce instance URL (e.g. https://orgname.sandbox.my.salesforce.com)
+        messaging_session_id: Salesforce MessagingSession record ID (15 or 18-char)
+        transcript_text: Formatted transcript string to store
+
+    Returns:
+        tuple: (success bool, response_data dict, status_code int)
+    """
+    try:
+        api_version = "v62.0"
+        url = f"{instance_url}/services/data/{api_version}/sobjects/MessagingSession/{messaging_session_id}"
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {access_token}"
+        }
+
+        payload = {
+            "Bot_Transcript__c": transcript_text
+        }
+
+        print(f"Calling Salesforce Standard API (PATCH): {url}")
+        print(f"Payload length: {len(transcript_text)} chars")
+
+        response = requests.patch(url, json=payload, headers=headers)
+
+        print(f"Standard API Response Status: {response.status_code}")
+        print(f"Standard API Response Body: {response.text}")
+
+        # PATCH on SObject returns 204 No Content on success
+        if response.status_code == 204:
+            return True, {
+                "success": True,
+                "message": "Bot_Transcript__c updated successfully on MessagingSession",
+                "messagingSessionId": messaging_session_id,
+                "transcriptLength": len(transcript_text)
+            }, 200
+        else:
+            error_detail = response.text
+            try:
+                error_json = response.json()
+                if isinstance(error_json, list) and len(error_json) > 0:
+                    error_detail = error_json[0].get("message", response.text)
+            except Exception:
+                pass
+
+            return False, {
+                "success": False,
+                "error": f"API returned status {response.status_code}",
+                "details": error_detail
+            }, response.status_code
+
+    except Exception as e:
+        return False, {
+            "success": False,
+            "error": str(e)
+        }, 500
