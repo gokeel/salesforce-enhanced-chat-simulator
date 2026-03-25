@@ -220,6 +220,31 @@
             <div id="response-conversation" class="response" style="display: none;">
                 <pre id="response-conversation-text"></pre>
             </div>
+
+            <!-- Real-Time Events (SSE) -->
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+                <h3 style="font-size: 16px; margin-bottom: 10px;">Real-Time Events (SSE)
+                    <span id="sse-status" class="status error">🔴 Disconnected</span>
+                </h3>
+                <p style="margin-bottom: 15px; color: #666;">Connect to receive real-time updates for messages, typing
+                    indicators, and more (requires conversation from Step 2).</p>
+
+                <button id="btn-connect-sse" onclick="connectSSE()" disabled
+                    style="background-color: #17a2b8; margin-right: 10px;">Connect SSE</button>
+                <button id="btn-disconnect-sse" onclick="disconnectSSE()" disabled
+                    style="background-color: #6c757d;">Disconnect SSE</button>
+                <span id="loading-sse" class="loading">Connecting...</span>
+
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 16px; margin-bottom: 10px;">Event Log <button onclick="clearEventLog()"
+                            style="padding: 5px 10px; font-size: 12px; background-color: #dc3545;">Clear Log</button></h3>
+                    <div id="event-log"
+                        style="max-height: 300px; overflow-y: auto; background: #f8f9fa; border: 1px solid #ddd; border-radius: 5px; padding: 10px; font-family: 'Courier New', monospace; font-size: 12px;">
+                        <div style="color: #999; text-align: center; padding: 20px;">No events yet. Click "Connect SSE" to
+                            start receiving events.</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Send Chatbot History -->
@@ -298,50 +323,6 @@
 
             <div id="response-std" class="response" style="display: none; border-left-color: #4caf50;">
                 <pre id="response-std-text"></pre>
-            </div>
-        </div>
-
-        <!-- Open Chatbot History Page (Interaction API) - Disabled for now -->
-        <div class="section" style="background: #e0e0e0; color: #888;">
-            <h2 style="color: #999;">📋 Send Chatbot History (Interaction API)</h2>
-            <p style="margin-bottom: 15px; opacity: 0.7;">Send conversation history using the Interaction Service API
-                workflow (separate page).</p>
-
-            <div
-                style="margin-bottom: 15px; padding: 12px; background: rgba(0,0,0,0.05); border-left: 4px solid #bbb; border-radius: 4px;">
-                <strong style="color: #999;">⚠️ Disabled:</strong>
-                <span style="color: #aaa;"> This option is temporarily disabled. Use the Standard API method
-                    above.</span>
-            </div>
-
-            <span
-                style="display: inline-block; padding: 12px 24px; background: #bbb; color: white; border-radius: 5px; font-weight: 500; cursor: not-allowed; opacity: 0.6;">
-                Open Chatbot History Page → (Disabled)
-            </span>
-        </div>
-
-        <!-- Real-Time Events (SSE) -->
-        <div class="section">
-            <h2>Real-Time Events (SSE)
-                <span id="sse-status" class="status error">🔴 Disconnected</span>
-            </h2>
-            <p style="margin-bottom: 15px; color: #666;">Connect to receive real-time updates for messages, typing
-                indicators, and more (requires conversation from Step 2).</p>
-
-            <button id="btn-connect-sse" onclick="connectSSE()" disabled
-                style="background-color: #17a2b8; margin-right: 10px;">Connect SSE</button>
-            <button id="btn-disconnect-sse" onclick="disconnectSSE()" disabled
-                style="background-color: #6c757d;">Disconnect SSE</button>
-            <span id="loading-sse" class="loading">Connecting...</span>
-
-            <div style="margin-top: 20px;">
-                <h3 style="font-size: 16px; margin-bottom: 10px;">Event Log <button onclick="clearEventLog()"
-                        style="padding: 5px 10px; font-size: 12px; background-color: #dc3545;">Clear Log</button></h3>
-                <div id="event-log"
-                    style="max-height: 300px; overflow-y: auto; background: #f8f9fa; border: 1px solid #ddd; border-radius: 5px; padding: 10px; font-family: 'Courier New', monospace; font-size: 12px;">
-                    <div style="color: #999; text-align: center; padding: 20px;">No events yet. Click "Connect SSE" to
-                        start receiving events.</div>
-                </div>
             </div>
         </div>
 
@@ -599,8 +580,8 @@
                     // Enable conversation management buttons
                     document.getElementById('btn-close-conversation').disabled = false;
                     document.getElementById('btn-end-session').disabled = false;
-                    // Enable SSE connect button
-                    document.getElementById('btn-connect-sse').disabled = false;
+                    // Auto-connect SSE
+                    connectSSE();
                     // Enable Standard API send button if OAuth and conversation data ready
                     if (stdOauthToken && stdConversationData) {
                         document.getElementById('btn-std-send').disabled = false;
@@ -852,6 +833,8 @@
                     document.getElementById('btn-stop-typing').disabled = true;
                     document.getElementById('btn-send-message').disabled = true;
                     document.getElementById('btn-send-file').disabled = true;
+                    // Auto-disconnect SSE
+                    disconnectSSE();
                     // Keep management buttons disabled
                 } else {
                     status.className = 'status error';
