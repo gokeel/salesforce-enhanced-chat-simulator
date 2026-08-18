@@ -39,7 +39,7 @@ SCRT_URL=https://your-domain.salesforce-scrt.com
 ORG_ID=your_org_id
 ES_DEVELOPER_NAME=your_es_developer_name
 KID=your_key_id
-JWK_PATH=keys/infobip-private.json
+JWK_PATH=keys/key-private.json
 
 # OAuth 2.0 Client Credentials (for Conversation History API)
 OAUTH_TOKEN_URL=https://your-domain.salesforce.com/services/oauth2/token
@@ -54,7 +54,7 @@ OAUTH_CLIENT_SECRET=your_client_secret
 Taruh JWK (JSON Web Key) private key Anda di folder `keys/`:
 
 ```
-keys/infobip-private.json
+keys/key-private.json
 ```
 
 Format JWK contoh:
@@ -167,7 +167,7 @@ salesforce-enhanced-chat-simulator/
 ├── .env.example               # Environment variables template
 ├── keys/
 │   ├── README.md             # Instructions for JWK file
-│   └── infobip-private.json  # JWK private key (not in git)
+│   └── key-private.json  # JWK private key (not in git)
 ├── templates/
 │   └── index.html            # Web interface
 ├── .gitignore
@@ -178,7 +178,7 @@ salesforce-enhanced-chat-simulator/
 
 ⚠️ **IMPORTANT**: 
 - `.env` file contains all sensitive credentials and is in `.gitignore`
-- `keys/infobip-private.json` (JWK file) is also in `.gitignore`
+- `keys/key-private.json` (JWK file) is also in `.gitignore`
 - Never commit `.env` or JWK private keys to Git
 - The `.env.example` file is provided as a template (safe to commit)
 - Aplikasi ini untuk development/testing only
@@ -188,7 +188,7 @@ salesforce-enhanced-chat-simulator/
 
 ### Error: JWK file not found
 
-Pastikan Anda sudah menaruh JWK private key di `keys/infobip-private.json` (atau sesuai `JWK_PATH` di `.env`)
+Pastikan Anda sudah menaruh JWK private key di `keys/key-private.json` (atau sesuai `JWK_PATH` di `.env`)
 
 ### Error: Invalid JWK format
 
